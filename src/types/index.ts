@@ -1,9 +1,10 @@
-export type Role = 'sales' | 'logistics' | 'accountant' | 'manager' | 'admin';
+export type Role = 'sales' | 'logistics' | 'accountant' | 'manager';
 
-export type ShipmentStatus = 'quote' | 'planned' | 'in_transit' | 'delivered' | 'cancelled' | 'delayed';
+export type QuoteStatus = 'incoming' | 'proposed' | 'accepted' | 'declined' | 'expired' | 'superseded';
+export type ShipmentStatus = 'planned' | 'in_transit' | 'delivered' | 'cancelled';
 export type VehicleStatus = 'idle' | 'en_route' | 'maintenance';
 export type VehicleType = 'tent' | 'refrigerated';
-export type ApprovalStatus = 'pending' | 'approved' | 'declined';
+export type AssignmentMode = 'internal' | 'vendor';
 
 export interface User {
   id: string;
@@ -24,21 +25,40 @@ export interface Customer {
 
 export interface Quote {
   id: string;
+  quoteSetId: string;
   customerId: string;
   cargoType: string;
   requirements: VehicleType[];
   dimensions: string;
   weight: number;
-  pickupAddress: string;
-  deliveryAddress: string;
+  originAddress: string;
+  destinationAddress: string;
   distanceKm: number;
-  desiredPrice: number;
-  suggestedVendorId?: string;
-  vendorPrice?: number;
-  margin?: number;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  customerOfferedPrice?: number;
+  mode: AssignmentMode;
+  vehicleId?: string;
+  driverId?: string;
+  driverPayPerKm?: number;
+  vendorId?: string;
+  vendorFee?: number;
+  fuel: number;
+  tolls: number;
+  misc: number;
+  proposedCustomerPrice: number;
+  eta: string;
+  note?: string;
+  status: QuoteStatus;
   createdAt: string;
   createdBy: string;
+  updatedAt: string;
+}
+
+export interface QuotePricing {
+  pricePerKm: number;
+  totalCost: number;
+  costPerKm: number;
+  marginAmt: number;
+  marginPct: number;
 }
 
 export interface CostLineItem {
@@ -49,20 +69,25 @@ export interface CostLineItem {
 
 export interface Shipment {
   id: string;
+  quoteId: string;
   customerId: string;
   status: ShipmentStatus;
   originAddress: string;
   destinationAddress: string;
   distanceKm: number;
+  mode: AssignmentMode;
   vehicleId?: string;
   driverId?: string;
+  driverPayPerKm?: number;
   vendorId?: string;
+  vendorFee?: number;
+  fuel: number;
+  tolls: number;
+  misc: number;
+  customerPrice: number;
   pickupDate: string;
   eta: string;
-  customerPrice: number;
-  costs: CostLineItem[];
-  margin: number;
-  marginPercent: number;
+  deliveredAt?: string;
   cargoType: string;
   weight: number;
   requirements: VehicleType[];
@@ -81,7 +106,7 @@ export interface Vehicle {
   id: string;
   plateNumber: string;
   type: VehicleType;
-  capacityKg: number;
+  capacityTons: number;
   status: VehicleStatus;
   lastServiceDate: string;
   nextServiceDue: string;
@@ -93,9 +118,10 @@ export interface Driver {
   name: string;
   licenseClass: string;
   phone: string;
+  payPerKm: number;
   currentShipmentId?: string;
-  hoursOnDutyToday: number;
-  rating: number;
+  distanceToday: number;
+  distanceMTD: number;
   documentsValid: boolean;
 }
 
@@ -111,23 +137,6 @@ export interface Vendor {
   settlementTerms: string;
   phone: string;
   email: string;
-}
-
-export interface Approval {
-  id: string;
-  type: 'price' | 'vendor' | 'margin';
-  shipmentId: string;
-  proposedBy: string;
-  proposedPrice?: number;
-  proposedCost?: number;
-  proposedVendorId?: string;
-  expectedMargin: number;
-  riskNotes: string;
-  status: ApprovalStatus;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  comment?: string;
-  createdAt: string;
 }
 
 export interface AuditEvent {
@@ -152,4 +161,10 @@ export interface Permission {
 export interface RolePermissions {
   role: Role;
   permissions: Record<string, Permission>;
+}
+
+export interface SystemSettings {
+  minMarginPercentForApproval: number;
+  currency: string;
+  distanceUnit: string;
 }
